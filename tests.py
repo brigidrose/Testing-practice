@@ -53,6 +53,10 @@ class PartyTestsDatabase(unittest.TestCase):
         db.create_all()
         example_data()
 
+        with self.client as c:
+            with c.session_transaction() as sesh:
+                sesh['RSVP'] = True
+
     def tearDown(self):
         """Do at end of every test."""
 
@@ -63,6 +67,36 @@ class PartyTestsDatabase(unittest.TestCase):
         """ Test that the games page displays the game from example_data(). """
 
         result = self.client.get("/games")
+        self.assertIn("ticket_to_ride2", result.data)
+
+
+class FlaskTest(unittest.TestCase):
+
+    def setUp(self):
+        """Test that a user is logged in."""
+
+        app.config['TESTING'] = True
+        app.config['SECRET_KEY'] = 'key'
+
+        connect_to_db(app, 'postgresql:///testdb')
+        self.client = app.test_client()
+
+        db.create_all()
+        example_data()
+
+        with self.client as c:
+            with c.session_transaction() as sesh:
+                sesh['RSVP'] = True
+
+    def tearDown(self):
+        """Do at end of every test."""
+
+        db.session.close()
+        db.drop_all()
+
+    def test_RSVPed(self):
+        """ Test if RSVPed user can access games page. """
+        result = self.client.get('/games')
         self.assertIn("ticket_to_ride2", result.data)
 
 if __name__ == "__main__":
